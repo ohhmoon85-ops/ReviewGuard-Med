@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import {
   Star, MessageSquare, AlertTriangle, CheckCircle,
-  TrendingUp, Clock, AlertCircle, Plus
+  TrendingUp, Clock, AlertCircle, Plus, ClipboardPaste, Smartphone
 } from "lucide-react"
 
 export default async function DashboardPage() {
@@ -203,7 +203,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* 빠른 액션 */}
-      <div className="bg-primary-50 rounded-2xl p-6 border border-primary-100">
+      <div className="bg-primary-50 rounded-2xl p-6 border border-primary-100 mb-6">
         <h2 className="font-semibold text-primary-900 mb-4 flex items-center gap-2">
           <Clock className="w-5 h-5" />
           빠른 액션
@@ -228,6 +228,65 @@ export default async function DashboardPage() {
             병원 설정
           </Link>
         </div>
+      </div>
+
+      {/* 네이버/카카오 리뷰 수집 안내 */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-100">
+        <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+          <Smartphone className="w-5 h-5 text-green-600" />
+          네이버·카카오 리뷰 수집 방법
+        </h2>
+        <p className="text-sm text-gray-500 mb-4">
+          네이버·카카오는 공식 API를 제공하지 않습니다. 아래 방법으로 간편하게 수집하세요.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 방법 1 */}
+          <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+            <div className="flex items-center gap-2 mb-2">
+              <ClipboardPaste className="w-4 h-4 text-green-700" />
+              <p className="text-sm font-semibold text-green-800">방법 ① 스마트 붙여넣기 (권장)</p>
+            </div>
+            <ol className="text-xs text-green-700 space-y-1.5 list-decimal list-inside leading-relaxed">
+              <li>네이버 스마트플레이스 앱 또는 웹에서 새 리뷰 확인</li>
+              <li>리뷰 텍스트 전체 복사 (작성자·별점 포함)</li>
+              <li>
+                <Link href="/dashboard/reviews?add=true" className="underline font-medium">
+                  리뷰 추가 → 스마트 붙여넣기
+                </Link>{" "}
+                탭에 붙여넣기
+              </li>
+              <li>AI가 자동으로 별점·작성자·내용 추출 → 저장</li>
+            </ol>
+          </div>
+
+          {/* 방법 2 */}
+          <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-base">📧</span>
+              <p className="text-sm font-semibold text-yellow-800">방법 ② 이메일 알림 활용</p>
+            </div>
+            <ol className="text-xs text-yellow-700 space-y-1.5 list-decimal list-inside leading-relaxed">
+              <li>네이버 스마트플레이스 관리자 → 알림 설정</li>
+              <li>"새 리뷰 이메일 알림" 켜기</li>
+              <li>알림 이메일 수신 후 → 내용 복사</li>
+              <li>스마트 붙여넣기에 붙여넣으면 자동 파싱</li>
+            </ol>
+            <p className="text-xs text-yellow-600 mt-2 font-medium">
+              💡 카카오맵도 동일한 방법으로 사용 가능
+            </p>
+          </div>
+        </div>
+
+        {!hospital.google_place_id && (
+          <div className="mt-4 flex items-start gap-2 bg-blue-50 px-4 py-3 rounded-xl border border-blue-100">
+            <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700">
+              <span className="font-semibold">구글 리뷰 자동 수집</span>이 아직 설정되지 않았습니다.{" "}
+              <Link href="/dashboard/settings" className="underline font-semibold">설정 페이지</Link>에서 구글 지도를 연결하면
+              매일 자동으로 수집됩니다.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
