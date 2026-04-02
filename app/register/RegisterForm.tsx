@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Shield } from "lucide-react"
+import { Shield, Search, CheckCircle, Star } from "lucide-react"
 import { createClient } from "@/lib/supabase-client"
 import { SPECIALTY_LIST } from "@/lib/types"
 
@@ -21,6 +21,14 @@ function translateError(message: string): string {
   return message
 }
 
+interface PlaceCandidate {
+  place_id: string
+  name: string
+  address: string
+  rating?: number
+  user_ratings_total?: number
+}
+
 export default function RegisterForm() {
   const router = useRouter()
 
@@ -35,6 +43,37 @@ export default function RegisterForm() {
   const [specialty, setSpecialty] = useState("")
   const [notificationEmail, setNotificationEmail] = useState("")
 
+  // 구글 장소 검색 상태
+  const [searching, setSearching] = useState(false)
+  const [placeResults, setPlaceResults] = useState<PlaceCandidate[]>([])
+  const [selectedPlace, setSelectedPlace] = useState<PlaceCandidate | null>(null)
+  const [searchError, setSearchError] = useState("")
+
+  async function handleSearchPlace() {
+    if (!hospitalName.trim()) return
+    setSearching(true)
+    setPlaceResults([])
+    setSelectedPlace(null)
+    setSearchError("")
+
+    try {
+      const res = await fetch(`/api/places/search?q=${encodeURIComponent(hospitalName)}`)
+      const data = await res.json()
+
+      if (res.status === 503) {
+        setSearchError("구글 API 키가 설정되지 않았습니다. 설정 후 다시 시도해주세요.")
+      } else if (data.results?.length === 0) {
+        setSearchError("검색 결과가 없습니다. 병원명을 더 구체적으로 입력해보세요.")
+      } else {
+        setPlaceResults(data.results || [])
+      }
+    } catch {
+      setSearchError("검색 중 오류가 발생했습니다.")
+    } finally {
+      setSearching(false)
+    }
+  }
+
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -42,10 +81,7 @@ export default function RegisterForm() {
 
     const supabase = createClient()
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
 
     if (signUpError) {
       setError(translateError(signUpError.message))
@@ -64,6 +100,7 @@ export default function RegisterForm() {
       name: hospitalName,
       specialty,
       notification_email: notificationEmail || email,
+      google_place_id: selectedPlace?.place_id || null,
     })
 
     if (hospitalError) {
@@ -89,6 +126,7 @@ export default function RegisterForm() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          {/* 스텝 인디케이터 */}
           <div className="flex items-center gap-2 mb-6">
             {[1, 2].map((s) => (
               <div key={s} className="flex items-center gap-2">
@@ -144,11 +182,17 @@ export default function RegisterForm() {
                     type="text"
                     required
                     value={hospitalName}
-                    onChange={(e) => setHospitalName(e.target.value)}
+                    onChange={(e) => {
+                      setHospitalName(e.target.value)
+                      setSelectedPlace(null)
+                      setPlaceResults([])
+                      setSearchError("")
+                    }}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="OO의원, OO클리닉"
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">진료과 *</label>
                   <select
@@ -163,6 +207,91 @@ export default function RegisterForm() {
                     ))}
                   </select>
                 </div>
+
+                {/* 구글 지도 연결 */}
+                <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">구글 지도 연결</p>
+                      <p className="text-xs text-gray-400">구글 리뷰 자동 수집을 위해 연결하세요</p>
+                    </div>
+                    {selectedPlace && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> 연결됨
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedPlace ? (
+                    <div className="bg-green-50 rounded-lg p-3 flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-green-800">{selectedPlace.name}</p>
+                        <p className="text-xs text-green-600">{selectedPlace.address}</p>
+                        {selectedPlace.rating && (
+                          <p className="text-xs text-green-600 mt-0.5">
+                            ⭐ {selectedPlace.rating} ({selectedPlace.user_ratings_total?.toLocaleString()}개 리뷰)
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedPlace(null); setPlaceResults([]) }}
+                        className="text-xs text-green-600 hover:text-green-800 underline flex-shrink-0"
+                      >
+                        변경
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleSearchPlace}
+                        disabled={!hospitalName.trim() || searching}
+                        className="w-full flex items-center justify-center gap-2 border border-primary-300 text-primary-700 font-medium py-2.5 rounded-lg hover:bg-primary-50 transition text-sm disabled:opacity-50"
+                      >
+                        {searching ? (
+                          <><div className="w-4 h-4 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin" /> 검색 중...</>
+                        ) : (
+                          <><Search className="w-4 h-4" /> 구글 지도에서 병원 검색</>
+                        )}
+                      </button>
+
+                      {searchError && (
+                        <p className="text-xs text-orange-600">{searchError}</p>
+                      )}
+
+                      {placeResults.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-500">아래 목록에서 해당 병원을 선택하세요</p>
+                          {placeResults.map((place) => (
+                            <button
+                              key={place.place_id}
+                              type="button"
+                              onClick={() => { setSelectedPlace(place); setPlaceResults([]) }}
+                              className="w-full text-left px-3 py-2.5 border border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition"
+                            >
+                              <p className="text-sm font-medium text-gray-800">{place.name}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{place.address}</p>
+                              {place.rating && (
+                                <p className="text-xs text-yellow-600 mt-0.5 flex items-center gap-1">
+                                  <Star className="w-3 h-3" /> {place.rating} · 리뷰 {place.user_ratings_total?.toLocaleString()}개
+                                </p>
+                              )}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setPlaceResults([])}
+                            className="text-xs text-gray-400 hover:text-gray-600"
+                          >
+                            나중에 설정하기
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     알림 이메일 <span className="text-gray-400 font-normal">(부정 리뷰 즉시 알림)</span>
