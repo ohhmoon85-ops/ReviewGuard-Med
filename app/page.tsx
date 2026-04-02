@@ -32,7 +32,7 @@ export default function LandingPage() {
       <section className="max-w-6xl mx-auto px-4 py-20 text-center">
         <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 text-sm font-medium px-4 py-2 rounded-full mb-6">
           <Bot className="w-4 h-4" />
-          Claude AI 기반 의료광고법 준수 답변
+          AI 기반 의료광고법 준수 답변
         </div>
         <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
           병원 리뷰 관리,<br />

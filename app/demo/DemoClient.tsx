@@ -4,7 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import {
   Shield, Star, MessageSquare, AlertTriangle, CheckCircle,
-  Bot, RefreshCw, Send, X, Plus, Sparkles, ArrowRight
+  Bot, RefreshCw, Send, X, Plus, Sparkles, ArrowRight,
+  LayoutDashboard, ListChecks, FlaskConical
 } from "lucide-react"
 
 // ─── 목업 데이터 ───────────────────────────────────────────────────────────────
@@ -126,17 +127,18 @@ function generateResponse(content: string, sentiment: string, riskLevel: string)
   return "안녕하세요, 이춘봉성형외과입니다. 따뜻한 후기 남겨 주셔서 진심으로 감사드립니다. 앞으로도 항상 최선을 다해 진료하겠습니다. 다음 방문 때도 편안한 경험이 될 수 있도록 노력하겠습니다. 감사합니다."
 }
 
+type Tab = "dashboard" | "reviews" | "add"
+
 // ─── 메인 컴포넌트 ────────────────────────────────────────────────────────────
 export default function DemoClient() {
   const [reviews, setReviews] = useState(MOCK_REVIEWS)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "reviews" | "add">("dashboard")
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard")
   const [selectedReview, setSelectedReview] = useState<typeof MOCK_REVIEWS[0] | null>(null)
   const [showResponse, setShowResponse] = useState(false)
   const [generatingResponse, setGeneratingResponse] = useState(false)
   const [responseText, setResponseText] = useState("")
   const [published, setPublished] = useState(false)
 
-  // 리뷰 추가 상태
   const [addPlatform, setAddPlatform] = useState("naver")
   const [addRating, setAddRating] = useState(3)
   const [addAuthor, setAddAuthor] = useState("")
@@ -201,21 +203,49 @@ export default function DemoClient() {
 
   const unanswered = reviews.filter((r) => !r.is_responded).length
 
+  const tabs = [
+    { key: "dashboard" as Tab, label: "대시보드", icon: LayoutDashboard },
+    { key: "reviews" as Tab, label: "리뷰 관리", icon: ListChecks },
+    { key: "add" as Tab, label: "테스트", icon: FlaskConical },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+
       {/* 데모 배너 */}
-      <div className="bg-primary-600 text-white text-center py-2.5 text-sm font-medium">
-        <Sparkles className="inline w-4 h-4 mr-1.5" />
-        데모 모드 — API 키 없이 모든 기능을 체험해보세요
-        <Link href="/register" className="ml-4 underline hover:no-underline">
+      <div className="bg-primary-600 text-white text-center py-2.5 text-xs sm:text-sm font-medium px-4 flex items-center justify-center gap-2 flex-wrap">
+        <span className="flex items-center gap-1.5">
+          <Sparkles className="w-4 h-4 flex-shrink-0" />
+          데모 모드 — API 키 없이 모든 기능 체험
+        </span>
+        <Link href="/register" className="underline hover:no-underline font-semibold whitespace-nowrap">
           실제 서비스 시작하기 →
         </Link>
       </div>
 
-      <div className="flex min-h-[calc(100vh-40px)]">
-        {/* 사이드바 */}
-        <aside className="w-64 bg-white border-r border-gray-100 flex flex-col">
-          <div className="p-6 border-b border-gray-100">
+      {/* 헤더 (모바일) / 사이드바 헤더 역할 */}
+      <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between md:hidden sticky top-0 z-30">
+        <div className="flex items-center gap-2">
+          <Shield className="w-6 h-6 text-primary-600" />
+          <div>
+            <div className="font-bold text-gray-900 text-sm leading-tight">ReviewGuard Med</div>
+            <div className="text-xs text-gray-400">데모 · 이춘봉성형외과</div>
+          </div>
+        </div>
+        <Link
+          href="/register"
+          className="flex items-center gap-1 bg-primary-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-primary-700 transition"
+        >
+          시작 <ArrowRight className="w-3 h-3" />
+        </Link>
+      </header>
+
+      {/* 데스크톱 레이아웃 */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* 사이드바 — 데스크톱 전용 */}
+        <aside className="hidden md:flex w-60 lg:w-64 bg-white border-r border-gray-100 flex-col flex-shrink-0">
+          <div className="p-5 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <Shield className="w-7 h-7 text-primary-600" />
               <div>
@@ -225,26 +255,23 @@ export default function DemoClient() {
             </div>
           </div>
 
-          <div className="px-4 py-3 mx-3 mt-4 bg-primary-50 rounded-xl">
+          <div className="px-3 py-3 mx-3 mt-4 bg-primary-50 rounded-xl">
             <p className="font-semibold text-primary-900 text-sm">이춘봉성형외과</p>
             <p className="text-xs text-primary-600">성형외과 · 데모</p>
           </div>
 
-          <nav className="flex-1 px-3 py-4">
-            {[
-              { key: "dashboard", label: "대시보드" },
-              { key: "reviews", label: "리뷰 관리" },
-              { key: "add", label: "리뷰 추가 테스트" },
-            ].map((item) => (
+          <nav className="flex-1 px-3 py-4 space-y-1">
+            {tabs.map((item) => (
               <button
                 key={item.key}
-                onClick={() => setActiveTab(item.key as any)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl mb-1 transition font-medium text-sm ${
+                onClick={() => setActiveTab(item.key)}
+                className={`w-full text-left flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition font-medium text-sm ${
                   activeTab === item.key
                     ? "bg-primary-600 text-white"
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
+                <item.icon className="w-4 h-4 flex-shrink-0" />
                 {item.label}
               </button>
             ))}
@@ -262,271 +289,289 @@ export default function DemoClient() {
         </aside>
 
         {/* 메인 콘텐츠 */}
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
 
-          {/* ── 대시보드 탭 ── */}
-          {activeTab === "dashboard" && (
-            <div>
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">이춘봉성형외과</h1>
-                <p className="text-gray-500">성형외과 · 평판 관리 대시보드</p>
-              </div>
+            {/* ── 대시보드 탭 ── */}
+            {activeTab === "dashboard" && (
+              <div>
+                <div className="mb-6">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900">이춘봉성형외과</h1>
+                  <p className="text-gray-500 text-sm">성형외과 · 평판 관리 대시보드</p>
+                </div>
 
-              {/* 통계 카드 */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {[
-                  { icon: Star, bg: "bg-yellow-50 text-yellow-600", label: "평균 별점", value: MOCK_STATS.avg_rating, sub: "/ 5.0" },
-                  { icon: MessageSquare, bg: "bg-blue-50 text-blue-600", label: "전체 리뷰", value: reviews.length, sub: "건" },
-                  { icon: CheckCircle, bg: "bg-green-50 text-green-600", label: "답변율", value: `${Math.round((reviews.filter(r => r.is_responded).length / reviews.length) * 100)}%`, sub: `미답변 ${unanswered}건` },
-                  { icon: AlertTriangle, bg: "bg-red-50 text-red-600", label: "긴급 리뷰", value: reviews.filter(r => r.risk_level === "urgent").length, sub: "건" },
-                ].map((s) => (
-                  <div key={s.label} className="bg-white rounded-2xl p-5 border border-gray-100">
-                    <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
-                      <s.icon className="w-5 h-5" />
+                {/* 통계 카드 */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                  {[
+                    { icon: Star, bg: "bg-yellow-50 text-yellow-600", label: "평균 별점", value: MOCK_STATS.avg_rating, sub: "/ 5.0" },
+                    { icon: MessageSquare, bg: "bg-blue-50 text-blue-600", label: "전체 리뷰", value: reviews.length, sub: "건" },
+                    { icon: CheckCircle, bg: "bg-green-50 text-green-600", label: "답변율", value: `${Math.round((reviews.filter(r => r.is_responded).length / reviews.length) * 100)}%`, sub: `미답변 ${unanswered}건` },
+                    { icon: AlertTriangle, bg: "bg-red-50 text-red-600", label: "긴급 리뷰", value: reviews.filter(r => r.risk_level === "urgent").length, sub: "건" },
+                  ].map((s) => (
+                    <div key={s.label} className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100">
+                      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
+                        <s.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-500 mb-1">{s.label}</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900">{s.value}</p>
+                      <p className="text-xs text-gray-400 mt-1">{s.sub}</p>
                     </div>
-                    <p className="text-sm text-gray-500 mb-1">{s.label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{s.value}</p>
-                    <p className="text-xs text-gray-400 mt-1">{s.sub}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              {/* 감성 분포 */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                  <h2 className="font-semibold text-gray-900 mb-4">리뷰 감성 분포</h2>
-                  <div className="space-y-3">
-                    {[
-                      { label: "긍정", count: reviews.filter(r => r.sentiment === "positive").length, color: "bg-green-500", text: "text-green-700" },
-                      { label: "중립", count: reviews.filter(r => r.sentiment === "neutral").length, color: "bg-yellow-500", text: "text-yellow-700" },
-                      { label: "부정", count: reviews.filter(r => r.sentiment === "negative").length, color: "bg-orange-500", text: "text-orange-700" },
-                      { label: "분쟁소지", count: reviews.filter(r => r.sentiment === "dispute").length, color: "bg-red-500", text: "text-red-700" },
-                    ].map((item) => (
-                      <div key={item.label} className="flex items-center gap-3">
-                        <span className={`text-sm font-medium w-16 text-right ${item.text}`}>{item.label}</span>
-                        <div className="flex-1 bg-gray-100 rounded-full h-2.5">
-                          <div className={`h-2.5 rounded-full ${item.color}`} style={{ width: `${(item.count / reviews.length) * 100}%` }} />
+                {/* 감성 분포 + 긴급 리뷰 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100">
+                    <h2 className="font-semibold text-gray-900 mb-4">리뷰 감성 분포</h2>
+                    <div className="space-y-3">
+                      {[
+                        { label: "긍정", count: reviews.filter(r => r.sentiment === "positive").length, color: "bg-green-500", text: "text-green-700" },
+                        { label: "중립", count: reviews.filter(r => r.sentiment === "neutral").length, color: "bg-yellow-500", text: "text-yellow-700" },
+                        { label: "부정", count: reviews.filter(r => r.sentiment === "negative").length, color: "bg-orange-500", text: "text-orange-700" },
+                        { label: "분쟁소지", count: reviews.filter(r => r.sentiment === "dispute").length, color: "bg-red-500", text: "text-red-700" },
+                      ].map((item) => (
+                        <div key={item.label} className="flex items-center gap-3">
+                          <span className={`text-xs font-medium w-14 sm:w-16 text-right ${item.text}`}>{item.label}</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-2.5">
+                            <div className={`h-2.5 rounded-full ${item.color}`} style={{ width: `${(item.count / reviews.length) * 100}%` }} />
+                          </div>
+                          <span className="text-xs text-gray-500 w-8">{item.count}건</span>
                         </div>
-                        <span className="text-sm text-gray-500 w-8">{item.count}건</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100">
+                    <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-red-500" />
+                      즉시 대응 필요
+                      {reviews.filter(r => r.risk_level === "urgent" && !r.is_responded).length > 0 && (
+                        <span className="ml-auto bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                          {reviews.filter(r => r.risk_level === "urgent" && !r.is_responded).length}건
+                        </span>
+                      )}
+                    </h2>
+                    {reviews.filter(r => ["urgent", "caution"].includes(r.risk_level) && !r.is_responded).slice(0, 3).map((review) => (
+                      <div
+                        key={review.id}
+                        onClick={() => { setActiveTab("reviews"); setTimeout(() => handleOpenResponse(review), 100) }}
+                        className="p-3 rounded-xl bg-red-50 hover:bg-red-100 transition cursor-pointer mb-2"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${review.risk_level === "urgent" ? "bg-red-200 text-red-800" : "bg-orange-200 text-orange-800"}`}>
+                            {RISK_ICONS[review.risk_level]} {RISK_LABELS[review.risk_level]}
+                          </span>
+                          <span className="text-xs text-gray-500">{"⭐".repeat(review.rating)} {review.author_name}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 line-clamp-2">{review.content}</p>
                       </div>
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
 
-                {/* 긴급 리뷰 */}
-                <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                  <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-red-500" />
-                    즉시 대응 필요
-                    {reviews.filter(r => r.risk_level === "urgent" && !r.is_responded).length > 0 && (
-                      <span className="ml-auto bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                        {reviews.filter(r => r.risk_level === "urgent" && !r.is_responded).length}건
-                      </span>
-                    )}
-                  </h2>
-                  {reviews.filter(r => ["urgent","caution"].includes(r.risk_level) && !r.is_responded).slice(0, 3).map((review) => (
+            {/* ── 리뷰 관리 탭 ── */}
+            {activeTab === "reviews" && (
+              <div>
+                <div className="flex items-center justify-between mb-5">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900">리뷰 관리</h1>
+                  <button
+                    onClick={() => setActiveTab("add")}
+                    className="flex items-center gap-1.5 bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-xl hover:bg-primary-700 transition font-medium text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">리뷰 추가 테스트</span>
+                    <span className="sm:hidden">추가</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3 sm:space-y-4">
+                  {reviews.map((review) => (
                     <div
                       key={review.id}
-                      onClick={() => { setActiveTab("reviews"); setTimeout(() => handleOpenResponse(review), 100) }}
-                      className="p-3 rounded-xl bg-red-50 hover:bg-red-100 transition cursor-pointer mb-2"
+                      className={`bg-white rounded-2xl p-4 sm:p-5 border ${review.risk_level === "urgent" ? "border-red-200 ring-1 ring-red-100" : "border-gray-100"}`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${review.risk_level === "urgent" ? "bg-red-200 text-red-800" : "bg-orange-200 text-orange-800"}`}>
-                          {RISK_ICONS[review.risk_level]} {RISK_LABELS[review.risk_level]}
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${RISK_COLORS[review.risk_level]}`}>
+                            {RISK_ICONS[review.risk_level]} {RISK_LABELS[review.risk_level]}
+                          </span>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SENTIMENT_COLORS[review.sentiment]}`}>
+                            {SENTIMENT_LABELS[review.sentiment]}
+                          </span>
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                            {PLATFORM_LABELS[review.platform] || review.platform}
+                          </span>
+                          <span className="text-xs text-yellow-600">{"⭐".repeat(review.rating)}</span>
+                        </div>
+                        <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${review.is_responded ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"}`}>
+                          {review.is_responded ? <><CheckCircle className="w-3 h-3" /> 답변완료</> : "미답변"}
                         </span>
-                        <span className="text-xs text-gray-500">{"⭐".repeat(review.rating)} {review.author_name}</span>
                       </div>
-                      <p className="text-sm text-gray-700 line-clamp-2">{review.content}</p>
+
+                      <p className="text-xs text-gray-500 mb-1.5">{review.author_name}</p>
+                      <p className="text-gray-800 text-sm leading-relaxed mb-3">{review.content}</p>
+
+                      {review.ai_summary && (
+                        <div className="bg-primary-50 rounded-xl px-3 py-2 mb-3">
+                          <p className="text-xs text-primary-700">
+                            <span className="font-semibold">AI 요약:</span> {review.ai_summary}
+                          </p>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {review.keywords.map((kw) => (
+                              <span key={kw} className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">{kw}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => handleOpenResponse(review)}
+                          className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl transition ${
+                            review.risk_level === "urgent" && !review.is_responded
+                              ? "bg-red-600 text-white hover:bg-red-700"
+                              : "bg-primary-600 text-white hover:bg-primary-700"
+                          }`}
+                        >
+                          <Bot className="w-4 h-4" />
+                          {review.is_responded ? "답변 보기" : "AI 답변 생성"}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ── 리뷰 관리 탭 ── */}
-          {activeTab === "reviews" && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">리뷰 관리</h1>
-                <button
-                  onClick={() => setActiveTab("add")}
-                  className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-xl hover:bg-primary-700 transition font-medium text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  리뷰 추가 테스트
-                </button>
-              </div>
+            {/* ── 리뷰 추가 테스트 탭 ── */}
+            {activeTab === "add" && (
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">리뷰 추가 테스트</h1>
+                <p className="text-gray-500 text-sm mb-5">직접 리뷰를 입력하면 AI가 감성과 위험도를 자동 분류합니다.</p>
 
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className={`bg-white rounded-2xl p-5 border ${review.risk_level === "urgent" ? "border-red-200 ring-1 ring-red-100" : "border-gray-100"}`}
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${RISK_COLORS[review.risk_level]}`}>
-                          {RISK_ICONS[review.risk_level]} {RISK_LABELS[review.risk_level]}
-                        </span>
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${SENTIMENT_COLORS[review.sentiment]}`}>
-                          {SENTIMENT_LABELS[review.sentiment]}
-                        </span>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {PLATFORM_LABELS[review.platform] || review.platform}
-                        </span>
-                        <span className="text-xs text-yellow-600">{"⭐".repeat(review.rating)} ({review.rating}점)</span>
-                      </div>
-                      <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-full flex items-center gap-1 ${review.is_responded ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"}`}>
-                        {review.is_responded ? <><CheckCircle className="w-3.5 h-3.5" /> 답변완료</> : "미답변"}
-                      </span>
-                    </div>
-
-                    <p className="text-sm text-gray-500 mb-2">{review.author_name}</p>
-                    <p className="text-gray-800 text-sm leading-relaxed mb-3">{review.content}</p>
-
-                    {review.ai_summary && (
-                      <div className="bg-primary-50 rounded-xl px-3 py-2 mb-3">
-                        <p className="text-xs text-primary-700">
-                          <span className="font-semibold">AI 요약:</span> {review.ai_summary}
-                        </p>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {review.keywords.map((kw) => (
-                            <span key={kw} className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">{kw}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => handleOpenResponse(review)}
-                        className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl transition ${
-                          review.risk_level === "urgent" && !review.is_responded
-                            ? "bg-red-600 text-white hover:bg-red-700"
-                            : "bg-primary-600 text-white hover:bg-primary-700"
-                        }`}
-                      >
-                        <Bot className="w-4 h-4" />
-                        {review.is_responded ? "답변 보기" : "AI 답변 생성"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── 리뷰 추가 테스트 탭 ── */}
-          {activeTab === "add" && (
-            <div className="max-w-2xl">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">리뷰 추가 테스트</h1>
-              <p className="text-gray-500 mb-6">직접 리뷰를 입력하면 AI가 감성과 위험도를 자동 분류합니다.</p>
-
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-4">
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">플랫폼</label>
-                    <select value={addPlatform} onChange={(e) => setAddPlatform(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-                      <option value="naver">네이버 지도</option>
-                      <option value="google">구글 지도</option>
-                      <option value="kakao">카카오맵</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">별점</label>
-                    <select value={addRating} onChange={(e) => setAddRating(Number(e.target.value))}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-                      {[5,4,3,2,1].map(r => <option key={r} value={r}>{"⭐".repeat(r)} ({r}점)</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">리뷰 내용 *</label>
-                  <textarea value={addContent} onChange={(e) => { setAddContent(e.target.value); setAnalyzedReview(null) }}
-                    rows={4} placeholder="리뷰 내용을 입력하세요. 아래 예시를 복사해서 테스트해보세요."
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500" />
-                </div>
-
-                {/* 테스트 예시 */}
-                <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">📋 테스트 예시 (클릭해서 입력)</p>
-                  <div className="space-y-2">
-                    {[
-                      { label: "✅ 긍정", text: "원장님이 너무 친절하고 설명을 자세히 해주셔서 좋았습니다. 다음에 또 방문할게요!" },
-                      { label: "⚠️ 부정", text: "대기시간이 너무 길고 직원이 불친절했어요. 다시는 오고 싶지 않네요." },
-                      { label: "🚨 긴급", text: "수술 후 부작용이 생겼는데 아무 조치도 없었습니다. 의료분쟁조정원에 신고하겠습니다." },
-                    ].map((ex) => (
-                      <button key={ex.label} onClick={() => { setAddContent(ex.text); setAnalyzedReview(null) }}
-                        className="w-full text-left px-3 py-2 bg-white rounded-lg border border-gray-100 hover:border-primary-300 transition text-sm">
-                        <span className="font-medium">{ex.label}</span>
-                        <span className="text-gray-500 ml-2">{ex.text.slice(0, 40)}...</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button onClick={handleAnalyze} disabled={!addContent.trim() || analyzing}
-                  className="w-full flex items-center justify-center gap-2 bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition disabled:opacity-50">
-                  {analyzing ? (
-                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> AI 분석 중...</>
-                  ) : (
-                    <><Bot className="w-4 h-4" /> AI 분석하기</>
-                  )}
-                </button>
-              </div>
-
-              {/* 분석 결과 */}
-              {analyzedReview && (
-                <div className="bg-white rounded-2xl p-6 border border-primary-100 ring-1 ring-primary-100">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-primary-600" />
-                    AI 분석 결과
-                  </h3>
+                <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 mb-4">
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gray-50 rounded-xl p-3">
-                      <p className="text-xs text-gray-500 mb-1">감성 분류</p>
-                      <span className={`text-sm font-bold px-2 py-1 rounded-full ${SENTIMENT_COLORS[analyzedReview.sentiment]}`}>
-                        {SENTIMENT_LABELS[analyzedReview.sentiment]}
-                      </span>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">플랫폼</label>
+                      <select value={addPlatform} onChange={(e) => setAddPlatform(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <option value="naver">네이버 지도</option>
+                        <option value="google">구글 지도</option>
+                        <option value="kakao">카카오맵</option>
+                      </select>
                     </div>
-                    <div className="bg-gray-50 rounded-xl p-3">
-                      <p className="text-xs text-gray-500 mb-1">위험도</p>
-                      <span className={`text-sm font-bold px-2 py-1 rounded-full border ${RISK_COLORS[analyzedReview.risk_level]}`}>
-                        {RISK_ICONS[analyzedReview.risk_level]} {RISK_LABELS[analyzedReview.risk_level]}
-                      </span>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">별점</label>
+                      <select value={addRating} onChange={(e) => setAddRating(Number(e.target.value))}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{"⭐".repeat(r)} ({r}점)</option>)}
+                      </select>
                     </div>
                   </div>
-                  <div className="bg-primary-50 rounded-xl p-3 mb-4">
-                    <p className="text-xs font-semibold text-primary-700 mb-1">AI 요약</p>
-                    <p className="text-sm text-primary-800">{analyzedReview.summary}</p>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">리뷰 내용 *</label>
+                    <textarea value={addContent} onChange={(e) => { setAddContent(e.target.value); setAnalyzedReview(null) }}
+                      rows={4} placeholder="리뷰 내용을 입력하세요. 아래 예시를 복사해서 테스트해보세요."
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
-                  {analyzedReview.risk_level === "urgent" && (
-                    <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
-                      <p className="text-sm font-semibold text-red-700">🚨 긴급 알림 발송 예정</p>
-                      <p className="text-xs text-red-600 mt-1">실제 서비스에서는 ohhmoon@naver.com으로 즉시 이메일이 발송됩니다.</p>
+
+                  {/* 테스트 예시 */}
+                  <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">📋 테스트 예시 (클릭해서 입력)</p>
+                    <div className="space-y-2">
+                      {[
+                        { label: "✅ 긍정", text: "원장님이 너무 친절하고 설명을 자세히 해주셔서 좋았습니다. 다음에 또 방문할게요!" },
+                        { label: "⚠️ 부정", text: "대기시간이 너무 길고 직원이 불친절했어요. 다시는 오고 싶지 않네요." },
+                        { label: "🚨 긴급", text: "수술 후 부작용이 생겼는데 아무 조치도 없었습니다. 의료분쟁조정원에 신고하겠습니다." },
+                      ].map((ex) => (
+                        <button key={ex.label} onClick={() => { setAddContent(ex.text); setAnalyzedReview(null) }}
+                          className="w-full text-left px-3 py-2 bg-white rounded-lg border border-gray-100 hover:border-primary-300 transition text-sm">
+                          <span className="font-medium">{ex.label}</span>
+                          <span className="text-gray-500 ml-2 text-xs sm:text-sm">{ex.text.slice(0, 35)}...</span>
+                        </button>
+                      ))}
                     </div>
-                  )}
-                  <button onClick={handleAddReview}
-                    className="w-full bg-gray-900 text-white font-semibold py-3 rounded-xl hover:bg-gray-800 transition flex items-center justify-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    리뷰 목록에 추가하기
+                  </div>
+
+                  <button onClick={handleAnalyze} disabled={!addContent.trim() || analyzing}
+                    className="w-full flex items-center justify-center gap-2 bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition disabled:opacity-50">
+                    {analyzing ? (
+                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> AI 분석 중...</>
+                    ) : (
+                      <><Bot className="w-4 h-4" /> AI 분석하기</>
+                    )}
                   </button>
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* 분석 결과 */}
+                {analyzedReview && (
+                  <div className="bg-white rounded-2xl p-4 sm:p-6 border border-primary-100 ring-1 ring-primary-100">
+                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-primary-600" />
+                      AI 분석 결과
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500 mb-1">감성 분류</p>
+                        <span className={`text-sm font-bold px-2 py-1 rounded-full ${SENTIMENT_COLORS[analyzedReview.sentiment]}`}>
+                          {SENTIMENT_LABELS[analyzedReview.sentiment]}
+                        </span>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500 mb-1">위험도</p>
+                        <span className={`text-sm font-bold px-2 py-1 rounded-full border ${RISK_COLORS[analyzedReview.risk_level]}`}>
+                          {RISK_ICONS[analyzedReview.risk_level]} {RISK_LABELS[analyzedReview.risk_level]}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-primary-50 rounded-xl p-3 mb-4">
+                      <p className="text-xs font-semibold text-primary-700 mb-1">AI 요약</p>
+                      <p className="text-sm text-primary-800">{analyzedReview.summary}</p>
+                    </div>
+                    {analyzedReview.risk_level === "urgent" && (
+                      <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
+                        <p className="text-sm font-semibold text-red-700">🚨 긴급 알림 발송 예정</p>
+                        <p className="text-xs text-red-600 mt-1">실제 서비스에서는 등록된 이메일로 즉시 알림이 발송됩니다.</p>
+                      </div>
+                    )}
+                    <button onClick={handleAddReview}
+                      className="w-full bg-gray-900 text-white font-semibold py-3 rounded-xl hover:bg-gray-800 transition flex items-center justify-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      리뷰 목록에 추가하기
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </main>
       </div>
 
+      {/* 하단 탭바 — 모바일 전용 */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-30">
+        {tabs.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => setActiveTab(item.key)}
+            className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition ${
+              activeTab === item.key ? "text-primary-600" : "text-gray-400"
+            }`}
+          >
+            <item.icon className="w-5 h-5" />
+            <span className="text-xs font-medium">{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
       {/* ── AI 답변 모달 ── */}
       {showResponse && selectedReview && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl sm:rounded-t-2xl z-10">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Bot className="w-5 h-5 text-primary-600" />
                 AI 답변 초안
               </h2>
@@ -535,7 +580,7 @@ export default function DemoClient() {
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="p-5">
               {/* 원본 리뷰 */}
               <div className="bg-gray-50 rounded-xl p-4 mb-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -550,7 +595,7 @@ export default function DemoClient() {
               {generatingResponse ? (
                 <div className="text-center py-10">
                   <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-gray-500 text-sm">Claude AI가 {selectedReview.platform === "naver" ? "성형외과" : ""} 의료광고법 가이드라인을 적용해 답변을 생성하고 있습니다...</p>
+                  <p className="text-gray-500 text-sm">AI가 의료광고법 가이드라인을 적용해 답변을 생성하고 있습니다...</p>
                 </div>
               ) : (
                 <>
@@ -573,7 +618,7 @@ export default function DemoClient() {
                     </div>
                   )}
 
-                  <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 mb-6">
+                  <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 mb-5">
                     <p className="text-xs text-yellow-700">⚠️ 의료광고법 준수: 게시 전 금지 표현 포함 여부를 반드시 확인하세요.</p>
                   </div>
 
@@ -585,11 +630,11 @@ export default function DemoClient() {
                   ) : (
                     <div className="flex gap-3">
                       <button onClick={() => setShowResponse(false)}
-                        className="flex-1 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-50 transition">
+                        className="flex-1 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-50 transition text-sm">
                         닫기
                       </button>
                       <button onClick={handlePublish}
-                        className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition">
+                        className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition text-sm">
                         <Send className="w-4 h-4" />
                         답변 저장 완료
                       </button>
