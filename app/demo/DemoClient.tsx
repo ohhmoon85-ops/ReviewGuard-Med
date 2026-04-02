@@ -214,22 +214,28 @@ export default function DemoClient() {
     setParsedResult(null)
     setTimeout(() => {
       const text = pasteText
-      // 별점 추출 (★ 개수 또는 숫자)
-      const starMatch = text.match(/★{1,5}/) || text.match(/별점[^\d]*(\d)/) || text.match(/(\d)점/)
-      const rating = starMatch
-        ? (starMatch[0].startsWith("★") ? starMatch[0].length : parseInt(starMatch[1]))
-        : 3
+      // 별점 추출
+      let rating = 3
+      const starIconMatch = text.match(/★+/)
+      const starNumMatch = text.match(/별점[^\d]*(\d)/) || text.match(/(\d)점/)
+      if (starIconMatch) {
+        rating = starIconMatch[0].length
+      } else if (starNumMatch?.[1]) {
+        rating = parseInt(starNumMatch[1])
+      }
       // 작성자 추출
       const authorMatch = text.match(/([가-힣]{2,4})(님|씨)/) || text.match(/작성자[:\s]+([^\n]+)/)
-      const author_name = authorMatch ? authorMatch[1] : null
+      const author_name = authorMatch?.[1] ?? null
       // 날짜 추출
-      const dateMatch = text.match(/(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/)
-      const review_date = dateMatch ? `${dateMatch[1]}-${dateMatch[2].padStart(2,"0")}-${dateMatch[3].padStart(2,"0")}` : new Date().toISOString().split("T")[0]
+      const dateMatch = text.match(/(\d{4})[./](\d{1,2})[./](\d{1,2})/)
+      const review_date = dateMatch
+        ? `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`
+        : new Date().toISOString().split("T")[0]
       // 본문 추출 (메타 정보 제거)
       const lines = text.split("\n").map(l => l.trim()).filter(l =>
-        l.length > 0 &&
-        !l.match(/★|별점|작성자|님이 리뷰|플랫폼|\d{4}[.\-/]\d/) &&
-        l.length > 5
+        l.length > 5 &&
+        !l.match(/★|별점|작성자|님이 리뷰|플랫폼/) &&
+        !l.match(/\d{4}[./]\d/)
       )
       const content = lines.join(" ").trim() || text.trim()
 
