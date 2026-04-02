@@ -5,7 +5,7 @@ import Link from "next/link"
 import {
   Shield, Star, MessageSquare, AlertTriangle, CheckCircle,
   Bot, RefreshCw, Send, X, Plus, Sparkles, ArrowRight,
-  LayoutDashboard, ListChecks, FlaskConical
+  LayoutDashboard, ListChecks, FlaskConical, ClipboardPaste, PenLine
 } from "lucide-react"
 
 // ─── 목업 데이터 ───────────────────────────────────────────────────────────────
@@ -139,12 +139,18 @@ export default function DemoClient() {
   const [responseText, setResponseText] = useState("")
   const [published, setPublished] = useState(false)
 
+  const [addMode, setAddMode] = useState<"paste" | "manual">("paste")
   const [addPlatform, setAddPlatform] = useState("naver")
   const [addRating, setAddRating] = useState(3)
   const [addAuthor, setAddAuthor] = useState("")
   const [addContent, setAddContent] = useState("")
   const [analyzing, setAnalyzing] = useState(false)
   const [analyzedReview, setAnalyzedReview] = useState<any>(null)
+
+  // 스마트 붙여넣기 상태
+  const [pasteText, setPasteText] = useState("")
+  const [parsing, setParsing] = useState(false)
+  const [parsedResult, setParsedResult] = useState<any>(null)
 
   function handleOpenResponse(review: typeof MOCK_REVIEWS[0]) {
     setSelectedReview(review)
@@ -199,6 +205,49 @@ export default function DemoClient() {
     setAddRating(3)
     setAnalyzedReview(null)
     setActiveTab("reviews")
+  }
+
+  // 스마트 붙여넣기 시뮬레이터 (데모용 — API 키 없이 동작)
+  function handlePasteSimulate() {
+    if (!pasteText.trim()) return
+    setParsing(true)
+    setParsedResult(null)
+    setTimeout(() => {
+      const text = pasteText
+      // 별점 추출 (★ 개수 또는 숫자)
+      const starMatch = text.match(/★{1,5}/) || text.match(/별점[^\d]*(\d)/) || text.match(/(\d)점/)
+      const rating = starMatch
+        ? (starMatch[0].startsWith("★") ? starMatch[0].length : parseInt(starMatch[1]))
+        : 3
+      // 작성자 추출
+      const authorMatch = text.match(/([가-힣]{2,4})(님|씨)/) || text.match(/작성자[:\s]+([^\n]+)/)
+      const author_name = authorMatch ? authorMatch[1] : null
+      // 날짜 추출
+      const dateMatch = text.match(/(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/)
+      const review_date = dateMatch ? `${dateMatch[1]}-${dateMatch[2].padStart(2,"0")}-${dateMatch[3].padStart(2,"0")}` : new Date().toISOString().split("T")[0]
+      // 본문 추출 (메타 정보 제거)
+      const lines = text.split("\n").map(l => l.trim()).filter(l =>
+        l.length > 0 &&
+        !l.match(/★|별점|작성자|님이 리뷰|플랫폼|\d{4}[.\-/]\d/) &&
+        l.length > 5
+      )
+      const content = lines.join(" ").trim() || text.trim()
+
+      setParsedResult({ rating, author_name, review_date, content })
+      setAddRating(rating)
+      if (author_name) setAddAuthor(author_name)
+      setAddContent(content)
+      setParsing(false)
+    }, 1500)
+  }
+
+  function resetPaste() {
+    setPasteText("")
+    setParsedResult(null)
+    setAddContent("")
+    setAddAuthor("")
+    setAddRating(3)
+    setAnalyzedReview(null)
   }
 
   const unanswered = reviews.filter((r) => !r.is_responded).length
@@ -449,66 +498,208 @@ export default function DemoClient() {
             {activeTab === "add" && (
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">리뷰 추가 테스트</h1>
-                <p className="text-gray-500 text-sm mb-5">직접 리뷰를 입력하면 AI가 감성과 위험도를 자동 분류합니다.</p>
+                <p className="text-gray-500 text-sm mb-4">네이버·카카오 리뷰를 붙여넣거나 직접 입력해보세요.</p>
 
-                <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 mb-4">
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">플랫폼</label>
-                      <select value={addPlatform} onChange={(e) => setAddPlatform(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-                        <option value="naver">네이버 지도</option>
-                        <option value="google">구글 지도</option>
-                        <option value="kakao">카카오맵</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">별점</label>
-                      <select value={addRating} onChange={(e) => setAddRating(Number(e.target.value))}
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-                        {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{"⭐".repeat(r)} ({r}점)</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">리뷰 내용 *</label>
-                    <textarea value={addContent} onChange={(e) => { setAddContent(e.target.value); setAnalyzedReview(null) }}
-                      rows={4} placeholder="리뷰 내용을 입력하세요. 아래 예시를 복사해서 테스트해보세요."
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500" />
-                  </div>
-
-                  {/* 테스트 예시 */}
-                  <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4">
-                    <p className="text-xs font-semibold text-gray-500 mb-2">📋 테스트 예시 (클릭해서 입력)</p>
-                    <div className="space-y-2">
-                      {[
-                        { label: "✅ 긍정", text: "원장님이 너무 친절하고 설명을 자세히 해주셔서 좋았습니다. 다음에 또 방문할게요!" },
-                        { label: "⚠️ 부정", text: "대기시간이 너무 길고 직원이 불친절했어요. 다시는 오고 싶지 않네요." },
-                        { label: "🚨 긴급", text: "수술 후 부작용이 생겼는데 아무 조치도 없었습니다. 의료분쟁조정원에 신고하겠습니다." },
-                      ].map((ex) => (
-                        <button key={ex.label} onClick={() => { setAddContent(ex.text); setAnalyzedReview(null) }}
-                          className="w-full text-left px-3 py-2 bg-white rounded-lg border border-gray-100 hover:border-primary-300 transition text-sm">
-                          <span className="font-medium">{ex.label}</span>
-                          <span className="text-gray-500 ml-2 text-xs sm:text-sm">{ex.text.slice(0, 35)}...</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button onClick={handleAnalyze} disabled={!addContent.trim() || analyzing}
-                    className="w-full flex items-center justify-center gap-2 bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition disabled:opacity-50">
-                    {analyzing ? (
-                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> AI 분석 중...</>
-                    ) : (
-                      <><Bot className="w-4 h-4" /> AI 분석하기</>
-                    )}
+                {/* 모드 탭 */}
+                <div className="flex border-b border-gray-200 mb-5">
+                  <button
+                    onClick={() => { setAddMode("paste"); resetPaste() }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium border-b-2 transition ${
+                      addMode === "paste" ? "border-primary-600 text-primary-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    <ClipboardPaste className="w-4 h-4" />
+                    스마트 붙여넣기
+                    <span className="bg-primary-100 text-primary-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">AI</span>
+                  </button>
+                  <button
+                    onClick={() => { setAddMode("manual"); resetPaste() }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium border-b-2 transition ${
+                      addMode === "manual" ? "border-primary-600 text-primary-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    <PenLine className="w-4 h-4" />
+                    직접 입력
                   </button>
                 </div>
 
-                {/* 분석 결과 */}
+                {/* ── 스마트 붙여넣기 ── */}
+                {addMode === "paste" && (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 rounded-xl p-3">
+                      <p className="text-xs text-blue-700 font-semibold mb-1">📋 사용 방법</p>
+                      <p className="text-xs text-blue-600 leading-relaxed">
+                        네이버·카카오 리뷰를 통째로 복사해서 붙여넣으세요.<br />
+                        AI가 작성자·별점·내용을 자동으로 추출합니다.
+                      </p>
+                    </div>
+
+                    {!parsedResult ? (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">플랫폼</label>
+                          <select value={addPlatform} onChange={(e) => setAddPlatform(e.target.value)}
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="naver">네이버 지도</option>
+                            <option value="google">구글 지도</option>
+                            <option value="kakao">카카오맵</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">리뷰 텍스트 붙여넣기</label>
+                          <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)}
+                            rows={5}
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            placeholder={"예시 (네이버 알림 이메일 또는 앱에서 복사):\n\n김OO님이 리뷰를 남겼습니다.\n별점: ★★★★☆\n친절하고 설명을 잘 해주셨어요. 대기 시간이 조금 길었지만 만족합니다.\n2026.04.02"}
+                          />
+                        </div>
+
+                        {/* 테스트 예시 */}
+                        <div className="bg-gray-50 rounded-xl p-3">
+                          <p className="text-xs font-semibold text-gray-500 mb-2">📋 테스트 예시 (클릭해서 입력)</p>
+                          <div className="space-y-2">
+                            {[
+                              { label: "✅ 긍정", text: "김OO님이 리뷰를 남겼습니다.\n별점: ★★★★★\n원장님이 너무 친절하고 설명을 자세히 해주셔서 좋았습니다. 다음에 또 방문할게요!\n2026.04.01" },
+                              { label: "⚠️ 부정", text: "이OO님이 리뷰를 남겼습니다.\n별점: ★★☆☆☆\n대기시간이 너무 길고 직원이 불친절했어요. 다시는 오고 싶지 않네요.\n2026.04.01" },
+                              { label: "🚨 긴급", text: "박OO님이 리뷰를 남겼습니다.\n별점: ★☆☆☆☆\n수술 후 부작용이 생겼는데 아무 조치도 없었습니다. 의료분쟁조정원에 신고하겠습니다.\n2026.04.02" },
+                            ].map((ex) => (
+                              <button key={ex.label} onClick={() => setPasteText(ex.text)}
+                                className="w-full text-left px-3 py-2 bg-white rounded-lg border border-gray-100 hover:border-primary-300 transition text-sm">
+                                <span className="font-medium">{ex.label}</span>
+                                <span className="text-gray-400 ml-2 text-xs">{ex.text.split("\n")[0]}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <button onClick={handlePasteSimulate} disabled={!pasteText.trim() || parsing}
+                          className="w-full flex items-center justify-center gap-2 bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition disabled:opacity-50">
+                          {parsing
+                            ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> AI 추출 중...</>
+                            : <><Sparkles className="w-4 h-4" /> AI로 자동 추출</>
+                          }
+                        </button>
+                      </>
+                    ) : (
+                      /* 파싱 결과 확인 */
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-xl">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <p className="text-xs text-green-700 font-medium">AI가 정보를 추출했습니다. 확인 후 분석하세요.</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">플랫폼</label>
+                            <select value={addPlatform} onChange={(e) => setAddPlatform(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                              <option value="naver">네이버 지도</option>
+                              <option value="google">구글 지도</option>
+                              <option value="kakao">카카오맵</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">별점</label>
+                            <select value={addRating} onChange={(e) => setAddRating(Number(e.target.value))}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                              {[5,4,3,2,1].map(r => <option key={r} value={r}>{"⭐".repeat(r)} ({r}점)</option>)}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">작성자</label>
+                          <input value={addAuthor} onChange={(e) => setAddAuthor(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            placeholder="익명" />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">리뷰 내용</label>
+                          <textarea value={addContent} onChange={(e) => setAddContent(e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button onClick={resetPaste}
+                            className="flex-1 border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition text-sm">
+                            다시 입력
+                          </button>
+                          <button onClick={() => { setAnalyzedReview(null); handleAnalyze() }} disabled={!addContent.trim() || analyzing}
+                            className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white font-semibold py-2.5 rounded-xl hover:bg-primary-700 transition disabled:opacity-50 text-sm">
+                            {analyzing
+                              ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> 분석 중...</>
+                              : <><Bot className="w-4 h-4" /> AI 감성 분석</>
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── 직접 입력 ── */}
+                {addMode === "manual" && (
+                  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">플랫폼</label>
+                        <select value={addPlatform} onChange={(e) => setAddPlatform(e.target.value)}
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                          <option value="naver">네이버 지도</option>
+                          <option value="google">구글 지도</option>
+                          <option value="kakao">카카오맵</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">별점</label>
+                        <select value={addRating} onChange={(e) => setAddRating(Number(e.target.value))}
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                          {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{"⭐".repeat(r)} ({r}점)</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">리뷰 내용 *</label>
+                      <textarea value={addContent} onChange={(e) => { setAddContent(e.target.value); setAnalyzedReview(null) }}
+                        rows={4} placeholder="리뷰 내용을 직접 입력하세요."
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                    </div>
+
+                    {/* 테스트 예시 */}
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <p className="text-xs font-semibold text-gray-500 mb-2">📋 예시 클릭</p>
+                      <div className="space-y-2">
+                        {[
+                          { label: "✅ 긍정", text: "원장님이 너무 친절하고 설명을 자세히 해주셔서 좋았습니다. 다음에 또 방문할게요!" },
+                          { label: "⚠️ 부정", text: "대기시간이 너무 길고 직원이 불친절했어요. 다시는 오고 싶지 않네요." },
+                          { label: "🚨 긴급", text: "수술 후 부작용이 생겼는데 아무 조치도 없었습니다. 의료분쟁조정원에 신고하겠습니다." },
+                        ].map((ex) => (
+                          <button key={ex.label} onClick={() => { setAddContent(ex.text); setAnalyzedReview(null) }}
+                            className="w-full text-left px-3 py-2 bg-white rounded-lg border border-gray-100 hover:border-primary-300 transition text-sm">
+                            <span className="font-medium">{ex.label}</span>
+                            <span className="text-gray-500 ml-2 text-xs">{ex.text.slice(0, 30)}...</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button onClick={handleAnalyze} disabled={!addContent.trim() || analyzing}
+                      className="w-full flex items-center justify-center gap-2 bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition disabled:opacity-50">
+                      {analyzing
+                        ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> AI 분석 중...</>
+                        : <><Bot className="w-4 h-4" /> AI 분석하기</>
+                      }
+                    </button>
+                  </div>
+                )}
+
+                {/* 분석 결과 (공통) */}
                 {analyzedReview && (
-                  <div className="bg-white rounded-2xl p-4 sm:p-6 border border-primary-100 ring-1 ring-primary-100">
+                  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-primary-100 ring-1 ring-primary-100 mt-4">
                     <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-primary-600" />
                       AI 분석 결과
