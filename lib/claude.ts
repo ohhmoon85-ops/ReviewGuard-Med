@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk"
 import type { Specialty, Sentiment, RiskLevel } from "./types"
 
 // 빌드 타임 오류 방지를 위해 런타임에만 초기화
-function getClient() {
+export function getClient() {
   return new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
   })
