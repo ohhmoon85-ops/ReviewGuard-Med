@@ -547,8 +547,8 @@ export default function DemoClient() {
                           <select value={addPlatform} onChange={(e) => setAddPlatform(e.target.value)}
                             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
                             <option value="naver">네이버 지도</option>
-                            <option value="google">구글 지도</option>
                             <option value="kakao">카카오맵</option>
+                            <option value="manual">기타 (직접 입력)</option>
                           </select>
                         </div>
 
@@ -601,8 +601,8 @@ export default function DemoClient() {
                             <select value={addPlatform} onChange={(e) => setAddPlatform(e.target.value)}
                               className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
                               <option value="naver">네이버 지도</option>
-                              <option value="google">구글 지도</option>
                               <option value="kakao">카카오맵</option>
+                              <option value="manual">기타 (직접 입력)</option>
                             </select>
                           </div>
                           <div>
@@ -655,8 +655,8 @@ export default function DemoClient() {
                         <select value={addPlatform} onChange={(e) => setAddPlatform(e.target.value)}
                           className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
                           <option value="naver">네이버 지도</option>
-                          <option value="google">구글 지도</option>
                           <option value="kakao">카카오맵</option>
+                          <option value="manual">기타 (직접 입력)</option>
                         </select>
                       </div>
                       <div>

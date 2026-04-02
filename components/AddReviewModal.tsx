@@ -13,9 +13,8 @@ type Mode = "paste" | "manual"
 
 const PLATFORM_OPTIONS = [
   { value: "naver", label: "네이버 지도" },
-  { value: "google", label: "구글 지도" },
   { value: "kakao", label: "카카오맵" },
-  { value: "manual", label: "직접 입력" },
+  { value: "manual", label: "기타 (직접 입력)" },
 ]
 
 export default function AddReviewModal({ hospitalId, onClose, onSuccess }: AddReviewModalProps) {
