@@ -1,7 +1,10 @@
 import { Resend } from "resend"
 import type { Review, Hospital } from "./types"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// 빌드 타임 오류 방지를 위해 런타임에만 초기화
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 const RISK_LABEL: Record<string, string> = {
   urgent: "🚨 긴급",
@@ -109,7 +112,7 @@ export async function sendNegativeReviewAlert(
 </html>
 `
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "ReviewGuard Med <noreply@reviewguard.co.kr>",
     to: [targetEmail],
     subject,
