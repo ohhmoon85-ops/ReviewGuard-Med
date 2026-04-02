@@ -6,6 +6,17 @@ import { useRouter } from "next/navigation"
 import { Shield } from "lucide-react"
 import { createClient } from "@/lib/supabase-client"
 
+function translateError(message: string): string {
+  if (message.includes("Invalid login credentials")) return "이메일 또는 비밀번호가 올바르지 않습니다."
+  if (message.includes("Email not confirmed")) return "이메일 인증이 완료되지 않았습니다. 받은 메일함을 확인해주세요."
+  if (message.includes("Too many requests") || message.includes("after")) {
+    const seconds = message.match(/\d+/)
+    return `보안을 위해 ${seconds ? seconds[0] + "초" : "잠시"} 후에 다시 시도해주세요.`
+  }
+  if (message.includes("Network")) return "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요."
+  return message
+}
+
 export default function LoginForm() {
   const router = useRouter()
   const [email, setEmail] = useState("")
@@ -22,7 +33,7 @@ export default function LoginForm() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError("이메일 또는 비밀번호가 올바르지 않습니다.")
+      setError(translateError(error.message))
       setLoading(false)
       return
     }

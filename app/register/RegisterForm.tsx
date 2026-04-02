@@ -7,6 +7,20 @@ import { Shield } from "lucide-react"
 import { createClient } from "@/lib/supabase-client"
 import { SPECIALTY_LIST } from "@/lib/types"
 
+function translateError(message: string): string {
+  if (message.includes("after")) {
+    const seconds = message.match(/\d+/)
+    return `보안을 위해 ${seconds ? seconds[0] + "초" : "잠시"} 후에 다시 시도해주세요.`
+  }
+  if (message.includes("already registered") || message.includes("already been registered")) return "이미 가입된 이메일입니다."
+  if (message.includes("invalid") && message.includes("email")) return "올바른 이메일 형식이 아닙니다."
+  if (message.includes("Password should be at least")) return "비밀번호는 6자 이상이어야 합니다."
+  if (message.includes("Unable to validate email address")) return "이메일 주소를 확인할 수 없습니다."
+  if (message.includes("Email rate limit exceeded")) return "이메일 발송 한도를 초과했습니다. 잠시 후 다시 시도해주세요."
+  if (message.includes("Network")) return "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요."
+  return message
+}
+
 export default function RegisterForm() {
   const router = useRouter()
 
@@ -34,7 +48,7 @@ export default function RegisterForm() {
     })
 
     if (signUpError) {
-      setError(signUpError.message)
+      setError(translateError(signUpError.message))
       setLoading(false)
       return
     }
