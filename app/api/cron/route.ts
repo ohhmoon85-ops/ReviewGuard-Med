@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase-server"
 import { analyzeReview } from "@/lib/claude"
 import { sendNegativeReviewAlert } from "@/lib/email"
 
+export const dynamic = "force-dynamic"
+
 // Vercel Cron Job - 30분마다 실행 (vercel.json 설정)
 // Google Places API로 리뷰 수집 (구글 계정 연동 시)
 export async function GET(req: NextRequest) {

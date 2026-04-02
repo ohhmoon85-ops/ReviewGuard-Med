@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
+
+export const dynamic = "force-dynamic"
 import { analyzeReview } from "@/lib/claude"
 
 // 기존 리뷰 재분석
