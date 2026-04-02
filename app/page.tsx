@@ -50,13 +50,19 @@ export default function LandingPage() {
             무료로 시작하기
           </Link>
           <Link
+            href="/demo"
+            className="border border-primary-200 bg-primary-50 text-primary-700 font-semibold px-8 py-4 rounded-xl hover:bg-primary-100 transition text-lg"
+          >
+            데모 체험하기
+          </Link>
+          <Link
             href="/login"
             className="border border-gray-200 text-gray-700 font-semibold px-8 py-4 rounded-xl hover:bg-gray-50 transition text-lg"
           >
             로그인
           </Link>
         </div>
-        <p className="mt-4 text-sm text-gray-400">신용카드 없이 시작 · 언제든 해지 가능</p>
+        <p className="mt-4 text-sm text-gray-400">신용카드 없이 시작 · 언제든 해지 가능 · <span className="text-primary-500">API 키 없이 데모 체험 가능</span></p>
       </section>
 
       {/* 문제 인식 */}
