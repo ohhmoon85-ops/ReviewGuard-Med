@@ -156,7 +156,39 @@ export default function LandingPage() {
       {/* 요금제 */}
       <section className="bg-gray-50 py-20">
         <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">요금제</h2>
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">요금제</h2>
+          <p className="text-center text-gray-500 mb-8">신용카드 없이 무료로 시작하세요</p>
+
+          {/* 무료 체험 범위 */}
+          <div className="max-w-4xl mx-auto mb-8 bg-white border border-primary-200 rounded-2xl p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <span className="inline-block bg-primary-50 text-primary-700 text-xs font-semibold px-3 py-1 rounded-full mb-2">무료 체험 포함</span>
+                <h3 className="font-bold text-gray-900 text-lg">가입 즉시 아래 기능을 무료로 사용할 수 있습니다</h3>
+              </div>
+              <Link
+                href="/register"
+                className="bg-primary-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary-700 transition text-sm whitespace-nowrap"
+              >
+                무료로 시작하기
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-5 border-t border-gray-100">
+              {[
+                { label: "리뷰 수동 등록", value: "3건" },
+                { label: "AI 답변 초안", value: "1건" },
+                { label: "구글 자동 수집", value: "3일" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span className="text-primary-600 font-bold text-sm">{item.value}</span>
+                  </div>
+                  <span className="text-gray-600 text-sm">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
               {
